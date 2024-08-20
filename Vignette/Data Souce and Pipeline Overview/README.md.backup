@@ -1,0 +1,87 @@
+# Pipeline Overview and Data Source
+
+
+## Summary
+
+In this document, we give an overview of the pipeline and suggest the order at which scripts are run.
+In addition, we summarize the main data source for fertility pipeline, specifically on shapefile and DHS data.  For preparation of population rasters, please reference the vignette 'Urban Fraction for Stratified Model'. The R scripts and vignettes are hosted under Github repo https://github.com/wu-thomas/DHS-fertility/. 
+Note that our pipeline is **not** aimed to replicate the estimates presented in DHS final report. Due to distinctions in methods, our estimates will **not** be exactly the same as DHS estimates, but they will be consistent.  For replicating estimates in DHS report, please use R package DHS.rates. 
+
+## Pipeline Overview
+
+The pipeline is structured as two parts: 
+
+1. Data preparation steps are detailed under Rcode/Data_prep.
+
+2. Stratified negative-binomial model is our main approach for analysis. The scripts are under 'Rcode/INLA_model'. We first calculate urban fractions for female population by age groups, then fit stratified model and finally get the overall aggregated estimates. More details could found in another vignette, 'Urban Fraction for negative-binomial Model'.
+
+The detailed instruction about implementing the scripts in order is:
+
+0. Make sure your R version is at least 4.3.0 (also RStudio is using R 4.3.0 or more recent version). Otherwise, installation of dependent packages might fail. 
+
+1. Create a new directory and put the script named "create_folder.R" into the directory.
+
+2. Create a folder called "Rcode" and a subfolder with the country name, for example, "Rcode/Tanzania". Then put all the R scripts under the github folder "Rcode" into this country specific Rcode folder. 
+
+3. Run "create_folder.R" in Rstudio. Make sure to specify the country in the top section of the script. This creates the folder structure to save data and results. After this step, the folder structure will look like: 
+
+<p align="center">
+  <img src="folder_structure2.png"  />
+</p>
+
+
+4. Specify the first and last years of interest, the year of the national census sampling frame, DHS survey year and the DHS file name in"Rcode/country/create_info.R". Then proceed to run the script. This will save the meta info about the country/survey. 
+
+5. Within Rcode/Data_prep, Run DataProcessing.R to prepare the birth record data for fertility analysis. Then run prepare_pop.R to download population density file used for aggregation and UR stratification.
+
+6. Next, navigate to “Vignette/Urban Fraction/get_urban_fraction” through Github and follow the instructions on this page. 
+Next, we will run scripts under “Rcode/Data_prep” sequentially. Run them in the following order:
+
+   + “prepare_thresh.R”
+   
+   + “thresh.R”
+
+   + “prepare_urb_frac.R”
+
+	For further info, reference https://github.com/wu-thomas/SUMMER-DHS. 
+
+7. Then we are ready to fit the models. First run fert_INLA_adm2_UR.R to fit stratified unit-level negative-binomial model; use defined functions and prepared urban fraction for U/R aggregation. Then, run fert_res_visual.R to obtain TFR estimates and produce customized visualization. 
+
+We use R to conduct all the statistical analysis. Packages and dependencies could be installed as following through the pipeline. Most packages are found under cran. For two important packages '**INLA**' and '**SUMMER**', we recommend using the following installing approach. The two packages are constantly being updated. For installation related issues, please visit https://github.com/hrue/r-inla/issues or contact us.
+
+
+```r
+### install INLA
+if (!isTRUE(requireNamespace("INLA", quietly = TRUE))) {
+  install.packages("INLA", repos=c(getOption("repos"), 
+                  INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
+    
+### SUMMER
+library(devtools)  # install.packages("devtools")
+devtools::install_github("richardli/SUMMER")
+```
+
+
+
+## DHS Survey Data
+
+We need the IR (individual) recode for the DHS survey for fertility estimation. To obtain the data, one needs to register first at the DHS website (https://dhsprogram.com/). After submitting a data request with description for the project, the data will be available to the user within days. When requesting DHS data, please make sure to check the "Show GPS datasets" option to request GPS data along with survey data. The interface should look like the following image. 
+
+<center>
+
+![Requesting GPS data](show_GPS.png)
+
+</center>
+
+
+Both the survey data and associated GPS data serve as input for SUMMER preprossing scripts. The user can enter the credentials for the DHS account within the script DataProcessing.R and there is no need to manually download DHS data.  
+
+
+
+## GADM shapefile
+
+The boundary shapefiles are needed for constructing subnational U5MR estimates. We use GADM shapefiles for the geography of Admin-1 and Admin-2 regions. We use API to download shapefiles within R; sometimes the API can be slow.
+
+
+
+
